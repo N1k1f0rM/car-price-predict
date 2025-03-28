@@ -7,3 +7,8 @@ httpx
 uvicorn
 joblib
 streamlit
+sqlalchemy
+dotenv
+alembic
+asyncpg
+psycopg2-binary
