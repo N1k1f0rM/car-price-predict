@@ -3,6 +3,7 @@ pydantic
 scikit-learn
 pandas
 numpy
-requests
+httpx
 uvicorn
 joblib
+streamlit
