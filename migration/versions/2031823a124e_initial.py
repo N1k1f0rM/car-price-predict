@@ -1,8 +1,8 @@
-"""init migration
+"""initial
 
-Revision ID: 6ff06b808b53
+Revision ID: 2031823a124e
 Revises: 
-Create Date: 2025-03-29 00:55:06.686431
+Create Date: 2025-03-29 02:40:49.170596
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '6ff06b808b53'
+revision: str = '2031823a124e'
 down_revision: Union[str, None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -25,10 +25,10 @@ def upgrade() -> None:
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('time', sa.TIMESTAMP(), server_default=sa.text('now()'), nullable=False),
     sa.Column('year', sa.Integer(), nullable=False),
-    sa.Column('driven', sa.Integer(), nullable=False),
+    sa.Column('km_driven', sa.Integer(), nullable=False),
     sa.Column('mileage', sa.Float(), nullable=False),
     sa.Column('engine', sa.Integer(), nullable=False),
-    sa.Column('hp', sa.Float(), nullable=False),
+    sa.Column('max_power', sa.Float(), nullable=False),
     sa.Column('seats', sa.Integer(), nullable=False),
     sa.Column('price', sa.Float(), nullable=False),
     sa.PrimaryKeyConstraint('id')

@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit as st
 from datetime import datetime
 import asyncio
@@ -49,3 +50,27 @@ if st.button("Show price"):
     else:
         st.success(f"Your price: {round(int(result['prediction']), 2)}₽")
 
+
+st.header("Get my cars list")
+
+
+async def get_my_cats():
+
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("http://localhost:8000/car/my_cars")
+
+            if resp.status_code == 200:
+                cars_data = resp.json()
+                cars_table = pd.DataFrame(cars_data)
+            else:
+                st.error(f"Ошибка при получении данных: {resp.status_code} - {resp.text}")
+
+        return cars_table
+    except Exception as e:
+        st.error(f"Ошибка подключения к API: {e}")
+
+
+if st.button("Show my cars"):
+    result = asyncio.run(get_my_cats())
+    st.success(st.dataframe(result))

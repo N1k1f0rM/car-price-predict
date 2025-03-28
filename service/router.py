@@ -1,8 +1,12 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.encoders import jsonable_encoder
-from .models import ItemResponse, ItemsResponse, Items, Item
+from .models import ItemResponse, Item
+from db.database import get_async_session, Cars, engine, Base
 from joblib import load
 import pandas as pd
+from sqlalchemy import insert, select, delete
+from sqlalchemy.ext.asyncio import AsyncSession
+import asyncio
 
 
 router = APIRouter(prefix="/car", tags=["Car"])
@@ -13,7 +17,8 @@ def pydantic_to_df(model_instance):
 
 
 @router.post("/predict", response_model=ItemResponse)
-def predicti(item: Item) -> dict:
+async def predicti(item: Item,
+             session: AsyncSession = Depends(get_async_session)) -> dict:
 
     instance = pydantic_to_df(item)
     prediction = model.predict(instance).tolist()[0]
@@ -21,26 +26,43 @@ def predicti(item: Item) -> dict:
     response = item.model_dump(by_alias=True)
     response.update({'prediction': prediction})
 
+    try:
+        stms = insert(Cars).values(
+            year=item.year,
+            km_driven=item.km_driven,
+            mileage=item.mileage,
+            engine=item.engine,
+            max_power=item.max_power,
+            seats=item.seats,
+            price=prediction
+        )
+
+        await session.execute(stms)
+        await session.commit()
+
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
+
     return response
 
 
-@router.post("/predicts", response_model=ItemsResponse)
-def predictis(items: Items) -> ItemsResponse:
-    preds = []
+@router.get("/my_cars")
+async def get_cars(session: AsyncSession = Depends(get_async_session)):
 
-    for i in items.objects:
-        instance = pydantic_to_df(i)
-        prediction = model.predict(instance).tolist()[0]
+    try:
+        link = await session.execute(select(Cars))
+        cars = link.scalars().all()
+        await session.commit()
 
-        response = {
-            'year': i.year,
-            'km_driven': i.km_driven,
-            'mileage': i.mileage,
-            'engine': i.engine,
-            'max_power': i.max_power,
-            'seats': i.seats,
-            'prediction': prediction
-        }
-        preds.append(response)
+        return cars
 
-    return ItemsResponse(predictions=preds)
+    except Exception as e:
+        raise HTTPException(500, detail=f"{e}")
+
+
+@router.on_event("shutdown")
+async def shutdown_event(session: AsyncSession = Depends(get_async_session)):
+
+    await session.execute(delete(Cars))
+    await session.commit()
